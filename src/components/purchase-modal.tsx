@@ -36,6 +36,10 @@ const SEPOLIA_TEST_USDT_LOWER =
 const MAINNET_USDT_LOWER =
   "0xdac17f958d2ee523a2206206994597c13d831ec7";
 
+const ENABLE_SIMULATION =
+  process.env.NEXT_PUBLIC_ENABLE_SIMULATION === "true" ||
+  process.env.NEXT_PUBLIC_ENABLE_SIMULATION === "1";
+
 function networkDisplayName(chainId: bigint): string {
   const n = Number(chainId);
   if (n === 1) return "Ethereum Mainnet";
@@ -282,13 +286,13 @@ export function PurchaseModal({ report, open, onClose }: Props) {
           >
             {busy ? "Submitting transfer…" : "Pay with USDT (on-chain)"}
           </button>
-          {process.env.NODE_ENV !== "production" ? (
+          {process.env.NODE_ENV !== "production" || ENABLE_SIMULATION ? (
             <button
               type="button"
               onClick={simulateSuccess}
               className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
             >
-              Dev: simulate payment (skip chain)
+              Simulate payment (test mode)
             </button>
           ) : null}
           <button
