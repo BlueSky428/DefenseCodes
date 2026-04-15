@@ -13,6 +13,11 @@ import {
   type Report,
 } from "@/data/reports";
 import {
+  CHAIN_ID_MAINNET,
+  CHAIN_ID_SEPOLIA,
+  requestSwitchEthereumChain,
+} from "@/lib/eip1193-network";
+import {
   readStoredConnector,
   resolveProviderForConnector,
 } from "@/lib/wallet-injected";
@@ -47,9 +52,9 @@ function noUsdtContractNotice(chainId: bigint, usdtAddress: string): PaymentNoti
 
   if (chainId === 1n && addrLower === SEPOLIA_TEST_USDT_LOWER) {
     return {
-      title: "Switch MetaMask to Sepolia",
+      title: "Switch your wallet to Sepolia",
       message:
-        "This site is configured with Sepolia test USDT, but MetaMask is on Ethereum Mainnet — that address is not USDT on mainnet. In MetaMask: open the network menu → turn on “Show test networks” → select Sepolia → try again. To pay on mainnet instead, set NEXT_PUBLIC_USDT_ADDRESS to mainnet USDT (see Etherscan token page) and restart the dev server.",
+        "This site is configured with Sepolia test USDT, but your wallet is on Ethereum Mainnet — that address is not USDT on mainnet. In your wallet app/extension: open the network menu → enable test networks if needed → select Sepolia → try again. To pay on mainnet instead, set NEXT_PUBLIC_USDT_ADDRESS to mainnet USDT (see the token’s Etherscan page) and restart the dev server.",
     };
   }
 
@@ -57,13 +62,13 @@ function noUsdtContractNotice(chainId: bigint, usdtAddress: string): PaymentNoti
     return {
       title: "Wallet on Sepolia, USDT is mainnet",
       message:
-        "NEXT_PUBLIC_USDT_ADDRESS is the Ethereum mainnet USDT contract, but MetaMask is on Sepolia. Either switch to Ethereum Mainnet or change your .env USDT address to a Sepolia test USDT contract.",
+        "NEXT_PUBLIC_USDT_ADDRESS is the Ethereum mainnet USDT contract, but your wallet is on Sepolia. Either switch to Ethereum Mainnet or change your .env USDT address to a Sepolia test USDT contract.",
     };
   }
 
   return {
     title: "Wrong network or USDT address",
-    message: `No token contract exists at your NEXT_PUBLIC_USDT_ADDRESS on ${netName}. Use the USDT (or test USDT) contract that belongs to this chain — check the explorer for your network — or switch MetaMask to the network that matches your .env.`,
+    message: `No token contract exists at your NEXT_PUBLIC_USDT_ADDRESS on ${netName}. Use the USDT (or test USDT) contract that belongs to this chain — check the explorer for your network — or switch your wallet to the network that matches your .env.`,
   };
 }
 
@@ -114,8 +119,76 @@ export function PurchaseModal({ report, open, onClose }: Props) {
     }
     setBusy(true);
     try {
-      const provider = browserProvider(eth);
-      const net = await provider.getNetwork();
+      const usdtLower = DEFAULT_USDT_ADDRESS.toLowerCase();
+      let provider = browserProvider(eth);
+      let net = await provider.getNetwork();
+
+      if (usdtLower === SEPOLIA_TEST_USDT_LOWER && net.chainId !== CHAIN_ID_SEPOLIA) {
+        setStatus("Requesting Sepolia in your wallet…");
+        try {
+          await requestSwitchEthereumChain(eth, CHAIN_ID_SEPOLIA);
+        } catch (e) {
+          const raw = e instanceof Error ? e.message : String(e);
+          const rejected =
+            /4001|user rejected|denied|rejected/i.test(raw) ||
+            (e as { code?: number })?.code === 4001;
+          setNotice({
+            title: rejected ? "Sepolia switch declined" : "Could not switch to Sepolia",
+            message: rejected
+              ? "Approve switching to Sepolia in your wallet, then tap Pay again."
+              : raw.length > 280
+                ? `${raw.slice(0, 240)}…`
+                : raw,
+          });
+          return;
+        } finally {
+          setStatus(null);
+        }
+        provider = browserProvider(eth);
+        net = await provider.getNetwork();
+        if (net.chainId !== CHAIN_ID_SEPOLIA) {
+          setNotice({
+            title: "Not on Sepolia yet",
+            message:
+              "Your wallet did not switch to Sepolia. Pick Sepolia in the network menu, then try Pay again.",
+          });
+          return;
+        }
+      }
+
+      if (usdtLower === MAINNET_USDT_LOWER && net.chainId !== CHAIN_ID_MAINNET) {
+        setStatus("Requesting Ethereum Mainnet in your wallet…");
+        try {
+          await requestSwitchEthereumChain(eth, CHAIN_ID_MAINNET);
+        } catch (e) {
+          const raw = e instanceof Error ? e.message : String(e);
+          const rejected =
+            /4001|user rejected|denied|rejected/i.test(raw) ||
+            (e as { code?: number })?.code === 4001;
+          setNotice({
+            title: rejected ? "Network switch declined" : "Could not switch network",
+            message: rejected
+              ? "Approve switching to Ethereum Mainnet in your wallet, then tap Pay again."
+              : raw.length > 280
+                ? `${raw.slice(0, 240)}…`
+                : raw,
+          });
+          return;
+        } finally {
+          setStatus(null);
+        }
+        provider = browserProvider(eth);
+        net = await provider.getNetwork();
+        if (net.chainId !== CHAIN_ID_MAINNET) {
+          setNotice({
+            title: "Not on Ethereum Mainnet yet",
+            message:
+              "Your wallet did not switch to Ethereum Mainnet. Select it in the network menu, then try Pay again.",
+          });
+          return;
+        }
+      }
+
       const bytecode = await provider.getCode(DEFAULT_USDT_ADDRESS);
       if (!bytecode || bytecode === "0x") {
         setNotice(noUsdtContractNotice(net.chainId, DEFAULT_USDT_ADDRESS));
