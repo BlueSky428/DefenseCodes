@@ -1,0 +1,33 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="32" y1="32" x2="224" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2EE59D"/>
+      <stop offset="1" stop-color="#32C5FF"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+  <rect x="28" y="28" width="200" height="200" rx="44" fill="#0A0F1F"/>
+  <path
+    d="M76 96C76 83.8497 85.8497 74 98 74H138C161.196 74 180 92.8039 180 116C180 139.196 161.196 158 138 158H108V182H98C85.8497 182 76 172.15 76 160V96Z"
+    fill="url(#g)"
+    opacity="0.18"
+    filter="url(#soft)"
+  />
+  <path
+    d="M88 104C88 95.1634 95.1634 88 104 88H140C157.673 88 172 102.327 172 120C172 137.673 157.673 152 140 152H112V176H104C95.1634 176 88 168.837 88 160V104Z"
+    fill="url(#g)"
+  />
+  <path
+    d="M112 116H138C146.837 116 154 123.163 154 132C154 140.837 146.837 148 138 148H112V116Z"
+    fill="#0A0F1F"
+    opacity="0.55"
+  />
+  <path
+    d="M112 148H88V132C88 123.163 95.1634 116 104 116H112V148Z"
+    fill="#0A0F1F"
+    opacity="0.55"
+  />
+  <circle cx="180" cy="78" r="10" fill="#2EE59D" opacity="0.95"/>
+</svg>
