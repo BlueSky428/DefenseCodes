@@ -9,9 +9,16 @@ import {
 export const WALLET_CONNECTOR_STORAGE_KEY = "defense-codes-wallet-connector";
 export const WALLET_CONNECTOR_RDNS_KEY = "defense-codes-wallet-rdns";
 export const WALLET_CONNECTOR_LABEL_KEY = "defense-codes-wallet-label";
+export const WALLET_CONNECTOR_ICON_KEY = "defense-codes-wallet-icon";
 
 /** Fallback when no EIP-6963 announcements but `window.ethereum` exists. */
 export const LEGACY_INJECTED_ID = "legacy-injected";
+
+/**
+ * `window.ethereum.providers[i]` when extensions do not all announce via EIP-6963.
+ * Stored id format: `injected-multi:0`, `injected-multi:1`, …
+ */
+export const INJECTED_MULTI_PREFIX = "injected-multi:";
 
 /** Stored session value: EIP-6963 id, legacy injected, or historical MetaMask / Phantom keys. */
 export type WalletConnectorId = string;
@@ -70,6 +77,23 @@ function isPhantomProvider(p: unknown): p is Injected {
   );
 }
 
+/** Best-effort label for a raw injected provider (no EIP-6963 metadata). */
+function labelFromInjectedProvider(p: Injected): string {
+  if (isPhantomProvider(p)) return "Phantom";
+  if (isAuthenticMetaMaskProvider(p)) return "MetaMask";
+  const f = p as unknown as WalletFlags;
+  if (f.isBraveWallet) return "Brave Wallet";
+  if (f.isCoinbaseWallet) return "Coinbase Wallet";
+  if (f.isRabby) return "Rabby";
+  if (f.isTrust || f.isTrustWallet) return "Trust Wallet";
+  if (f.isOKExWallet) return "OKX Wallet";
+  if (f.isOpera) return "Opera Wallet";
+  if ((p as { isMetaMask?: boolean }).isMetaMask) {
+    return "Browser wallet (MetaMask-compatible)";
+  }
+  return "Injected wallet";
+}
+
 /** Real MetaMask only (not Coinbase / Brave / Rabby / Phantom compatibility shims). */
 export function getMetaMaskProvider(): Injected | null {
   if (typeof window === "undefined") return null;
@@ -117,14 +141,20 @@ function rememberAnnouncements(list: { info: { uuid: string }; provider: Eip1193
 }
 
 /**
- * Wallets discovered via EIP-6963 for the connect modal (icons + labels).
+ * Wallets installed in this browser: EIP-6963 announcements plus any extra
+ * `window.ethereum.providers[]` entries that did not announce (multi-wallet injectors).
  */
 export async function discoverWalletOptions(): Promise<WalletOption[]> {
   if (typeof window === "undefined") {
     return [];
   }
-  const list = await discoverEip6963Providers(600);
+  const list = await discoverEip6963Providers(1000);
   rememberAnnouncements(list);
+
+  const seen = new Set<Eip1193Provider>();
+  for (const d of list) {
+    seen.add(d.provider);
+  }
 
   const options: WalletOption[] = [...list]
     .sort((a, b) => a.info.name.localeCompare(b.info.name))
@@ -136,8 +166,24 @@ export async function discoverWalletOptions(): Promise<WalletOption[]> {
       available: true,
     }));
 
+  const root = (window as unknown as { ethereum?: Injected }).ethereum;
+  const multi = root?.providers;
+  if (Array.isArray(multi) && multi.length > 0) {
+    multi.forEach((p, i) => {
+      if (!p || typeof p.request !== "function") return;
+      const prov = p as Injected;
+      if (seen.has(prov)) return;
+      seen.add(prov);
+      options.push({
+        id: `${INJECTED_MULTI_PREFIX}${i}`,
+        label: labelFromInjectedProvider(prov),
+        available: true,
+      });
+    });
+  }
+
   if (options.length === 0) {
-    const eth = (window as unknown as { ethereum?: Injected }).ethereum;
+    const eth = root;
     if (eth && typeof eth.request === "function") {
       options.push({
         id: LEGACY_INJECTED_ID,
@@ -171,6 +217,17 @@ export async function resolveProviderForConnector(
     return eth && typeof eth.request === "function" ? eth : null;
   }
 
+  if (id.startsWith(INJECTED_MULTI_PREFIX)) {
+    const idx = Number(id.slice(INJECTED_MULTI_PREFIX.length));
+    if (!Number.isInteger(idx) || idx < 0) return null;
+    const eth = (window as unknown as { ethereum?: Injected }).ethereum;
+    const arr = eth?.providers;
+    if (!Array.isArray(arr) || !arr[idx] || typeof arr[idx].request !== "function") {
+      return null;
+    }
+    return arr[idx] as Injected;
+  }
+
   const uuid = parseEip6963ConnectorId(id);
   if (!uuid) return null;
 
@@ -193,11 +250,11 @@ export async function resolveProviderForConnector(
     return cached as Injected;
   }
 
-  let list = await discoverEip6963Providers(600);
+  let list = await discoverEip6963Providers(1000);
   let found = pickFromList(list);
   if (found) return found;
 
-  list = await discoverEip6963Providers(900);
+  list = await discoverEip6963Providers(1000);
   found = pickFromList(list);
   if (found) return found;
 
@@ -237,6 +294,10 @@ export type WalletOption = {
 function isValidStoredConnectorId(v: string): v is WalletConnectorId {
   if (v === "metamask" || v === "phantom" || v === LEGACY_INJECTED_ID) return true;
   if (v.startsWith("eip6963:") && v.length > 12) return true;
+  if (v.startsWith(INJECTED_MULTI_PREFIX)) {
+    const n = Number(v.slice(INJECTED_MULTI_PREFIX.length));
+    return Number.isInteger(n) && n >= 0 && n < 32;
+  }
   return false;
 }
 
@@ -270,6 +331,43 @@ export function readStoredWalletLabel(): string | null {
   }
 }
 
+/** EIP-6963 icon (often a `data:image/png;base64,…` URI) when the user picked a wallet from discovery. */
+export function readStoredWalletIcon(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = sessionStorage.getItem(WALLET_CONNECTOR_ICON_KEY);
+    return v && v.trim() ? v.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * If the session has a connector but no stored icon (older sessions or injected-multi),
+ * scan wallets and persist the matching EIP-6963 icon when available.
+ */
+export async function backfillStoredWalletIconIfMissing(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (readStoredWalletIcon()) return false;
+  const id = readStoredConnector();
+  if (!id) return false;
+  const opts = await discoverWalletOptions();
+  const rdns = readStoredWalletRdns();
+  const label = readStoredWalletLabel();
+  const hit =
+    opts.find((o) => o.id === id) ||
+    (rdns ? opts.find((o) => o.rdns === rdns) : undefined) ||
+    (label ? opts.find((o) => o.label.trim() === label.trim()) : undefined);
+  const icon = hit?.icon?.trim();
+  if (!icon) return false;
+  try {
+    sessionStorage.setItem(WALLET_CONNECTOR_ICON_KEY, icon);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Best-effort name when EIP-6963 label was not stored (older sessions). */
 export function displayNameFromRdns(rdns: string | null): string | null {
   if (!rdns) return null;
@@ -290,6 +388,7 @@ export function displayNameFromConnectorId(id: WalletConnectorId | null): string
   if (id === "metamask") return "MetaMask";
   if (id === "phantom") return "Phantom";
   if (id === LEGACY_INJECTED_ID) return "Browser wallet";
+  if (id.startsWith(INJECTED_MULTI_PREFIX)) return "Injected wallet";
   return null;
 }
 
@@ -303,10 +402,23 @@ export function resolveConnectedWalletDisplayName(): string {
   return "Connected wallet";
 }
 
+/** True when the active session was connected through Phantom (EVM). */
+export function isPhantomWalletSession(): boolean {
+  if (typeof window === "undefined") return false;
+  if (readStoredConnector() === "phantom") return true;
+  const rdns = readStoredWalletRdns();
+  if (rdns && /phantom/i.test(rdns)) return true;
+  const label = readStoredWalletLabel();
+  if (label && /phantom/i.test(label)) return true;
+  return false;
+}
+
 export function writeStoredConnector(
   id: WalletConnectorId,
   rdns?: string | null,
   label?: string | null,
+  /** `undefined` = leave existing icon; `null` or empty = clear; string = set (EIP-6963 data URI or URL). */
+  icon?: string | null,
 ): void {
   try {
     sessionStorage.setItem(WALLET_CONNECTOR_STORAGE_KEY, id);
@@ -320,6 +432,13 @@ export function writeStoredConnector(
     } else {
       sessionStorage.removeItem(WALLET_CONNECTOR_LABEL_KEY);
     }
+    if (icon !== undefined) {
+      if (typeof icon === "string" && icon.trim()) {
+        sessionStorage.setItem(WALLET_CONNECTOR_ICON_KEY, icon.trim());
+      } else {
+        sessionStorage.removeItem(WALLET_CONNECTOR_ICON_KEY);
+      }
+    }
   } catch {
     /* ignore */
   }
@@ -330,6 +449,7 @@ export function clearStoredConnector(): void {
     sessionStorage.removeItem(WALLET_CONNECTOR_STORAGE_KEY);
     sessionStorage.removeItem(WALLET_CONNECTOR_RDNS_KEY);
     sessionStorage.removeItem(WALLET_CONNECTOR_LABEL_KEY);
+    sessionStorage.removeItem(WALLET_CONNECTOR_ICON_KEY);
   } catch {
     /* ignore */
   }

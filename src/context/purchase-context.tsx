@@ -4,9 +4,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
 } from "react";
+import { useWallet } from "@/context/wallet-context";
 
 const STORAGE_KEY = "defense-codes-unlocks-v1";
 const UNLOCK_EVENT = "defense-codes-unlock";
@@ -16,6 +19,8 @@ type PurchaseContextValue = {
   isUnlocked: (reportId: string) => boolean;
   unlockReport: (reportId: string) => void;
   resetUnlocks: () => void;
+  /** Reload Neon-backed entitlements for the connected wallet (no-op if no DB). */
+  refreshEntitlements: () => Promise<void>;
 };
 
 const PurchaseContext = createContext<PurchaseContextValue | null>(null);
@@ -53,8 +58,31 @@ function subscribe(onChange: () => void) {
 }
 
 export function PurchaseProvider({ children }: { children: React.ReactNode }) {
+  const { address } = useWallet();
   const raw = useSyncExternalStore(subscribe, readSnapshot, getServerSnapshot);
   const unlocked = useMemo(() => parseUnlocked(raw), [raw]);
+  const [serverIds, setServerIds] = useState<Set<string>>(() => new Set());
+
+  const refreshEntitlements = useCallback(async () => {
+    if (!address) {
+      setServerIds(new Set());
+      return;
+    }
+    try {
+      const r = await fetch(
+        `/api/purchases?wallet=${encodeURIComponent(address)}`,
+      );
+      if (!r.ok) return;
+      const data = (await r.json()) as { reportIds?: string[] };
+      setServerIds(new Set(data.reportIds ?? []));
+    } catch {
+      /* ignore */
+    }
+  }, [address]);
+
+  useEffect(() => {
+    void refreshEntitlements();
+  }, [refreshEntitlements]);
 
   const unlockReport = useCallback((reportId: string) => {
     if (typeof window === "undefined") return;
@@ -68,8 +96,8 @@ export function PurchaseProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isUnlocked = useCallback(
-    (reportId: string) => Boolean(unlocked[reportId]),
-    [unlocked],
+    (reportId: string) => Boolean(unlocked[reportId]) || serverIds.has(reportId),
+    [unlocked, serverIds],
   );
 
   const resetUnlocks = useCallback(() => {
@@ -79,6 +107,7 @@ export function PurchaseProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore */
     }
+    setServerIds(new Set());
     window.dispatchEvent(new Event(UNLOCK_EVENT));
   }, []);
 
@@ -88,8 +117,9 @@ export function PurchaseProvider({ children }: { children: React.ReactNode }) {
       isUnlocked,
       unlockReport,
       resetUnlocks,
+      refreshEntitlements,
     }),
-    [unlocked, isUnlocked, unlockReport, resetUnlocks],
+    [unlocked, isUnlocked, unlockReport, resetUnlocks, refreshEntitlements],
   );
 
   return (

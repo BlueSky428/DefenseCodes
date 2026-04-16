@@ -10,11 +10,13 @@ import {
 } from "react";
 import { browserProvider } from "@/lib/eth-provider";
 import {
+  backfillStoredWalletIconIfMissing,
   clearStoredConnector,
   displayNameFromConnectorId,
   displayNameFromRdns,
   parseWalletError,
   readStoredConnector,
+  readStoredWalletIcon,
   resolveConnectedWalletDisplayName,
   resolveProviderForConnector,
   walletNotAvailable,
@@ -27,6 +29,8 @@ type WalletContextValue = {
   address: string | null;
   /** Human-readable wallet name (e.g. MetaMask) when connected. */
   walletDisplayName: string | null;
+  /** Wallet branding image from EIP-6963 when available (often a data URI). */
+  walletIconUrl: string | null;
   chainId: bigint | null;
   connectorId: WalletConnectorId | null;
   connecting: boolean;
@@ -38,6 +42,7 @@ type WalletContextValue = {
     connectorId: WalletConnectorId,
     displayLabel?: string,
     walletRdns?: string,
+    walletIcon?: string | null,
   ) => Promise<boolean>;
   disconnect: () => void;
   dismissWalletIssue: () => void;
@@ -59,6 +64,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [lastAttemptedWalletRdns, setLastAttemptedWalletRdns] = useState<
     string | null
   >(null);
+  const [walletIconUrl, setWalletIconUrl] = useState<string | null>(null);
 
   const refreshFromProvider = useCallback(async () => {
     const id = readStoredConnector();
@@ -66,6 +72,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setAddress(null);
       setChainId(null);
       setConnectorId(null);
+      setWalletIconUrl(null);
       return;
     }
     const eth = await resolveProviderForConnector(id);
@@ -74,6 +81,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setConnectorId(null);
       setAddress(null);
       setChainId(null);
+      setWalletIconUrl(null);
       return;
     }
     try {
@@ -86,15 +94,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         const provider = browserProvider(eth);
         const net = await provider.getNetwork();
         setChainId(net.chainId);
+        if (!readStoredWalletIcon()) {
+          await backfillStoredWalletIconIfMissing();
+        }
+        setWalletIconUrl(readStoredWalletIcon());
       } else {
         setAddress(null);
         setChainId(null);
         setConnectorId(null);
+        setWalletIconUrl(null);
       }
     } catch {
       setAddress(null);
       setChainId(null);
       setConnectorId(null);
+      setWalletIconUrl(null);
     }
   }, []);
 
@@ -144,6 +158,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       id: WalletConnectorId,
       displayLabel?: string,
       walletRdns?: string,
+      walletIcon?: string | null,
     ): Promise<boolean> => {
       setLastAttemptedConnector(id);
       setLastAttemptedWalletLabel(displayLabel ?? null);
@@ -169,10 +184,20 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           displayNameFromRdns(walletRdns ?? null) ||
           displayNameFromConnectorId(id) ||
           "Connected wallet";
-        writeStoredConnector(id, walletRdns ?? null, labelToStore);
+        const iconForStore =
+          walletIcon === undefined
+            ? undefined
+            : walletIcon && walletIcon.trim()
+              ? walletIcon.trim()
+              : null;
+        writeStoredConnector(id, walletRdns ?? null, labelToStore, iconForStore);
+        if (iconForStore === undefined && !readStoredWalletIcon()) {
+          await backfillStoredWalletIconIfMissing();
+        }
         setConnectorId(id);
         setAddress(addr);
         setChainId(net.chainId);
+        setWalletIconUrl(readStoredWalletIcon());
         setWalletIssue(null);
         return true;
       } catch (err) {
@@ -191,6 +216,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setConnectorId(null);
     setAddress(null);
     setChainId(null);
+    setWalletIconUrl(null);
     setWalletIssue(null);
     setLastAttemptedConnector(null);
     setLastAttemptedWalletLabel(null);
@@ -206,6 +232,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     () => ({
       address,
       walletDisplayName,
+      walletIconUrl,
       chainId,
       connectorId,
       connecting,
@@ -220,6 +247,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     [
       address,
       walletDisplayName,
+      walletIconUrl,
       chainId,
       connectorId,
       connecting,

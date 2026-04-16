@@ -32,7 +32,7 @@ export type Report = {
   recommendationsPreview: RecommendationRow[];
 };
 
-export const REPORT_PRICE_USDT = 199;
+export const REPORT_PRICE_USDT = 1;
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
@@ -53,10 +53,49 @@ export const DEFAULT_TREASURY = normalizePublicAddr(
   "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
 );
 
-export const DEFAULT_USDT_ADDRESS = normalizePublicAddr(
-  process.env.NEXT_PUBLIC_USDT_ADDRESS,
+/** ERC-20 USDT on Ethereum mainnet (chain id 1). Legacy `NEXT_PUBLIC_USDT_ADDRESS` maps here. */
+export const DEFAULT_USDT_ETH = normalizePublicAddr(
+  process.env.NEXT_PUBLIC_USDT_ETH ?? process.env.NEXT_PUBLIC_USDT_ADDRESS,
   ZERO,
 );
+
+/** BEP-20 USDT on BNB Smart Chain mainnet (chain id 56). */
+export const DEFAULT_USDT_BSC = normalizePublicAddr(
+  process.env.NEXT_PUBLIC_USDT_BSC,
+  ZERO,
+);
+
+/** @deprecated Use `DEFAULT_USDT_ETH` or `resolveUsdtForChain`. */
+export const DEFAULT_USDT_ADDRESS = DEFAULT_USDT_ETH;
+
+const SEPOLIA_TEST_USDT_LOWER = "0xb7268c41f53d9eb78ffa8358d0d30545991b4960";
+
+/**
+ * USDT contract for the connected EVM chain, or `null` if this chain is not
+ * configured or (on Sepolia) the ETH-side token is not the Sepolia test USDT.
+ */
+export function resolveUsdtForChain(chainId: bigint): string | null {
+  if (chainId === 1n) {
+    return DEFAULT_USDT_ETH !== ZERO ? DEFAULT_USDT_ETH : null;
+  }
+  if (chainId === 56n) {
+    return DEFAULT_USDT_BSC !== ZERO ? DEFAULT_USDT_BSC : null;
+  }
+  if (chainId === 11155111n) {
+    if (
+      DEFAULT_USDT_ETH !== ZERO &&
+      DEFAULT_USDT_ETH.toLowerCase() === SEPOLIA_TEST_USDT_LOWER
+    ) {
+      return DEFAULT_USDT_ETH;
+    }
+    return null;
+  }
+  return null;
+}
+
+export function hasConfiguredUsdt(): boolean {
+  return DEFAULT_USDT_ETH !== ZERO || DEFAULT_USDT_BSC !== ZERO;
+}
 
 export const reports: Report[] = [
   {

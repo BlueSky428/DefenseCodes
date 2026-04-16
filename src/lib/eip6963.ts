@@ -28,9 +28,10 @@ export function parseEip6963ConnectorId(id: string): string | null {
 
 /**
  * Collect every wallet that announces via EIP-6963 (MetaMask, Rabby, Coinbase, OKX, etc.).
+ * Dispatches `requestProvider` twice so slow extensions still announce before the window closes.
  */
 export function discoverEip6963Providers(
-  timeoutMs = 550,
+  timeoutMs = 1000,
 ): Promise<Eip6963AnnounceDetail[]> {
   if (typeof window === "undefined") return Promise.resolve([]);
 
@@ -51,8 +52,12 @@ export function discoverEip6963Providers(
 
     window.addEventListener(EIP6963_ANNOUNCE_PROVIDER, onAnnounce);
     window.dispatchEvent(new Event(EIP6963_REQUEST_PROVIDER));
+    const redispatch = window.setTimeout(() => {
+      window.dispatchEvent(new Event(EIP6963_REQUEST_PROVIDER));
+    }, 200);
 
     window.setTimeout(() => {
+      window.clearTimeout(redispatch);
       window.removeEventListener(EIP6963_ANNOUNCE_PROVIDER, onAnnounce);
       resolve([...byUuid.values()]);
     }, timeoutMs);
