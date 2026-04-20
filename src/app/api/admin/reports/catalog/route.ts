@@ -6,21 +6,10 @@ import {
   parseReportPayload,
   resolveAllReports,
 } from "@/lib/reports-catalog";
-
-const SLUG_RE = /^[a-z][a-z0-9-]{1,62}$/;
+import { normalizeReportSlug } from "@/lib/report-slug";
 
 function adminJson(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
-}
-
-function normalizeSlug(raw: string): string | null {
-  const s = raw
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  if (!s || !SLUG_RE.test(s)) return null;
-  return s;
 }
 
 /** Create a catalog (dynamic) report. */
@@ -43,7 +32,7 @@ export async function POST(req: NextRequest) {
     return adminJson({ error: "Invalid JSON" }, 400);
   }
   const o = body as Record<string, unknown>;
-  const slugNorm = typeof o.slug === "string" ? normalizeSlug(o.slug) : null;
+  const slugNorm = typeof o.slug === "string" ? normalizeReportSlug(o.slug) : null;
   if (!slugNorm) {
     return adminJson(
       { error: "Invalid slug (lowercase letters, digits, hyphen; 2–63 chars)" },

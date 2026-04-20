@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { GlassPanel } from "@/components/glass-panel";
 import { ModalPortal } from "@/components/modal-portal";
 import type { ReportSector } from "@/data/reports";
@@ -103,16 +103,77 @@ function AddReportModal({
 }) {
   const [form, setForm] = useState<AddForm>(emptyAddForm);
   const [saving, setSaving] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [stagedPdfName, setStagedPdfName] = useState<string | null>(null);
   const [localErr, setLocalErr] = useState<string | null>(null);
+  const pendingPdfRef = useRef<File | null>(null);
 
   useEffect(() => {
     if (open) {
       setForm(emptyAddForm);
       setLocalErr(null);
+      pendingPdfRef.current = null;
+      setStagedPdfName(null);
+      setExtracting(false);
     }
   }, [open]);
 
   if (!open) return null;
+
+  const importFromPdf = async (file: File) => {
+    if (!secret.trim()) {
+      setLocalErr("Enter the admin secret before importing a PDF.");
+      return;
+    }
+    setLocalErr(null);
+    setExtracting(true);
+    pendingPdfRef.current = file;
+    setStagedPdfName(file.name);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch("/api/admin/reports/catalog/extract-pdf", {
+        method: "POST",
+        headers: headers(secret),
+        body: fd,
+      });
+      const data = await readJsonResponse<{
+        error?: string;
+        hint?: string;
+        slugSuggestion?: string;
+        title?: string;
+        author?: string;
+        riskHighlight?: string;
+        summary?: string;
+        methodology?: string;
+        pageCount?: number;
+        pdfFileName?: string;
+      }>(r);
+      if (!r.ok) {
+        const hint = data.hint ? ` ${data.hint}` : "";
+        throw new Error((data.error || `HTTP ${r.status}`) + hint);
+      }
+      setForm((f) => ({
+        ...f,
+        slug: data.slugSuggestion ?? f.slug,
+        title: data.title ?? f.title,
+        author: data.author ?? f.author,
+        riskHighlight: data.riskHighlight ?? f.riskHighlight,
+        summary: data.summary ?? f.summary,
+        methodology: data.methodology ?? f.methodology,
+        pageCount:
+          typeof data.pageCount === "number" && data.pageCount > 0
+            ? String(data.pageCount)
+            : f.pageCount,
+      }));
+    } catch (e) {
+      pendingPdfRef.current = null;
+      setStagedPdfName(null);
+      setLocalErr(e instanceof Error ? e.message : "PDF import failed");
+    } finally {
+      setExtracting(false);
+    }
+  };
 
   const submit = async () => {
     setLocalErr(null);
@@ -138,8 +199,32 @@ function AddReportModal({
           priceUsdt: Number.isFinite(priceUsdt) && priceUsdt >= 0 ? priceUsdt : undefined,
         }),
       });
-      const data = (await r.json()) as { error?: string };
+      const data = await readJsonResponse<{
+        error?: string;
+        report?: { id: string; slug: string };
+      }>(r);
       if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+      const slug = data.report?.slug ?? form.slug;
+      const pdf = pendingPdfRef.current;
+      if (pdf) {
+        const fd = new FormData();
+        fd.append("kind", "pdf");
+        fd.append("file", pdf);
+        const up = await fetch(`/api/admin/reports/${encodeURIComponent(slug)}/upload`, {
+          method: "POST",
+          headers: headers(secret),
+          body: fd,
+        });
+        const upData = await readJsonResponse<{ error?: string }>(up);
+        if (!up.ok) {
+          throw new Error(
+            upData.error ||
+              "Report was created but uploading the same PDF failed. Upload a PDF from the catalog list.",
+          );
+        }
+      }
+      pendingPdfRef.current = null;
+      setStagedPdfName(null);
       onCreated();
       onClose();
     } catch (e) {
@@ -172,9 +257,54 @@ function AddReportModal({
             New catalog report
           </h2>
           <p className="mt-2 text-xs leading-relaxed text-slate-500">
-            Creates a database-backed report (id = slug). Upload PDF/Word from the list or detail
-            view after saving.
+            Start from a PDF to autofill fields and attach that file after the report is created, or
+            fill the form manually.
           </p>
+
+          <div className="mt-5 rounded-xl border border-dashed border-[var(--accent)]/35 bg-[var(--accent)]/[0.06] p-4">
+            <p className="text-xs font-medium text-[var(--accent)]">Import from PDF</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+              We read document metadata and the first few pages of text (max 20 MB). You can still
+              edit everything before creating.
+            </p>
+            <label className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-lg border border-white/10 bg-[#070b18]/80 py-6 transition hover:border-[var(--accent)]/40 hover:bg-white/[0.03]">
+              <span className="text-sm font-medium text-slate-200">
+                {extracting ? "Reading PDF…" : "Drop PDF here or click to choose"}
+              </span>
+              <span className="mt-1 text-[11px] text-slate-500">.pdf only</span>
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                className="hidden"
+                disabled={extracting || saving}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (f) void importFromPdf(f);
+                }}
+              />
+            </label>
+            {stagedPdfName ? (
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[11px] text-slate-500">
+                  Will attach after create:{" "}
+                  <span className="font-mono text-slate-400">{stagedPdfName}</span>
+                </p>
+                <button
+                  type="button"
+                  disabled={extracting || saving}
+                  onClick={() => {
+                    pendingPdfRef.current = null;
+                    setStagedPdfName(null);
+                  }}
+                  className="text-[11px] text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline disabled:opacity-50"
+                >
+                  Clear PDF
+                </button>
+              </div>
+            ) : null}
+          </div>
+
           <div className="mt-6 space-y-1">
             <label className={field}>
               Slug <span className="text-rose-400">*</span>
@@ -279,7 +409,7 @@ function AddReportModal({
             </button>
             <button
               type="button"
-              disabled={saving || !form.slug.trim() || !form.title.trim()}
+              disabled={saving || extracting || !form.slug.trim() || !form.title.trim()}
               onClick={() => void submit()}
               className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-[#0A0F1F] transition hover:brightness-110 disabled:opacity-50"
             >
@@ -309,10 +439,20 @@ export function AdminReportsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
+  /** True once catalog data exists or we've marked the session authed (covers empty catalog after load). */
+  const catalogSessionOpen =
+    authed || rows.length > 0 || hiddenBuiltins.length > 0;
+
   const selectedRow =
     authed && selectedIdRaw && rows.some((r) => r.id === selectedIdRaw)
       ? (rows.find((r) => r.id === selectedIdRaw) ?? null)
       : null;
+
+  useEffect(() => {
+    if (!authed && (rows.length > 0 || hiddenBuiltins.length > 0)) {
+      setAuthed(true);
+    }
+  }, [authed, rows.length, hiddenBuiltins.length]);
 
   const load = useCallback(async () => {
     if (!secret.trim()) {
@@ -533,6 +673,14 @@ export function AdminReportsPanel() {
 
   const rowBusy = (rowId: string) => Boolean(busyId?.startsWith(rowId));
 
+  const lockAdminSession = () => {
+    setAuthed(false);
+    setRows([]);
+    setHiddenBuiltins([]);
+    setMessage(null);
+    setError(null);
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-10 flex flex-wrap items-end justify-between gap-6">
@@ -549,14 +697,31 @@ export function AdminReportsPanel() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {authed ? (
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-4 py-2.5 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/20"
-            >
-              + New report
-            </button>
+          {catalogSessionOpen ? (
+            <>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => void load()}
+                className="rounded-xl border border-white/15 px-4 py-2.5 text-sm text-slate-200 transition hover:border-[var(--accent)]/40 hover:bg-white/[0.06] disabled:opacity-50"
+              >
+                {loading ? "Refreshing…" : "Refresh catalog"}
+              </button>
+              <button
+                type="button"
+                onClick={lockAdminSession}
+                className="rounded-xl border border-white/15 px-4 py-2.5 text-sm text-slate-400 transition hover:border-rose-500/35 hover:bg-rose-500/10 hover:text-rose-200"
+              >
+                Sign out
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddOpen(true)}
+                className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-4 py-2.5 text-sm font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/20"
+              >
+                + New report
+              </button>
+            </>
           ) : null}
           <Link
             href="/reports"
@@ -567,48 +732,65 @@ export function AdminReportsPanel() {
         </div>
       </div>
 
-      <GlassPanel className="border border-white/[0.08] p-6 shadow-[0_0_0_1px_rgba(0,229,255,0.04)]">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--accent)]">
-              Authenticate
-            </h2>
-            <p className="mt-2 max-w-xl text-xs leading-relaxed text-slate-500">
-              Server env <span className="font-mono text-slate-400">ADMIN_API_SECRET</span>. Header{" "}
-              <span className="font-mono text-slate-400">x-admin-secret</span> — stored in
-              sessionStorage for this browser only.
+      {catalogSessionOpen && (error || message) ? (
+        <div className="mb-6 space-y-2">
+          {error ? (
+            <p className="rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+              {error}
             </p>
+          ) : null}
+          {message ? (
+            <p className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+              {message}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!catalogSessionOpen ? (
+        <GlassPanel className="border border-white/[0.08] p-6 shadow-[0_0_0_1px_rgba(0,229,255,0.04)]">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--accent)]">
+                Authenticate
+              </h2>
+              <p className="mt-2 max-w-xl text-xs leading-relaxed text-slate-500">
+                Server env <span className="font-mono text-slate-400">ADMIN_API_SECRET</span>. Header{" "}
+                <span className="font-mono text-slate-400">x-admin-secret</span> — stored in
+                sessionStorage for this browser only.
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <input
-            type="password"
-            autoComplete="off"
-            placeholder="Admin secret"
-            value={secret}
-            onChange={(e) => persistSecret(e.target.value)}
-            className="w-full rounded-xl border border-white/12 bg-[#070b18] px-4 py-3 font-mono text-sm text-white shadow-inner outline-none transition focus:border-[var(--accent)]/50 sm:max-w-md"
-          />
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => void load()}
-            className="rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-[#0A0F1F] shadow-[0_0_24px_rgba(0,229,255,0.2)] transition hover:brightness-110 disabled:opacity-50"
-          >
-            {loading ? "Loading…" : "Load catalog"}
-          </button>
-        </div>
-        {error ? (
-          <p className="mt-4 rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
-            {error}
-          </p>
-        ) : null}
-        {message ? (
-          <p className="mt-4 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
-            {message}
-          </p>
-        ) : null}
-      </GlassPanel>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input
+              type="password"
+              autoComplete="off"
+              placeholder="Admin secret"
+              value={secret}
+              onChange={(e) => persistSecret(e.target.value)}
+              className="w-full rounded-xl border border-white/12 bg-[#070b18] px-4 py-3 font-mono text-sm text-white shadow-inner outline-none transition focus:border-[var(--accent)]/50 sm:max-w-md"
+            />
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => void load()}
+              className="rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-[#0A0F1F] shadow-[0_0_24px_rgba(0,229,255,0.2)] transition hover:brightness-110 disabled:opacity-50"
+            >
+              {loading ? "Loading…" : "Load catalog"}
+            </button>
+          </div>
+          {error ? (
+            <p className="mt-4 rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+              {error}
+            </p>
+          ) : null}
+          {message ? (
+            <p className="mt-4 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+              {message}
+            </p>
+          ) : null}
+        </GlassPanel>
+      ) : null}
 
       <AddReportModal
         open={addOpen}
