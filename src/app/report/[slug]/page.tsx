@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { getReportBySlug, reports } from "@/data/reports";
+import { mergeReportFromDb } from "@/lib/report-overrides";
 import { ReportDetail } from "@/components/report-detail";
 import { ReportAccessGate } from "@/components/report-access-gate";
+
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return reports.map((r) => ({ slug: r.slug }));
@@ -24,8 +27,9 @@ export default async function ReportPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const report = getReportBySlug(slug);
-  if (!report) notFound();
+  const base = getReportBySlug(slug);
+  if (!base) notFound();
+  const report = await mergeReportFromDb(base);
 
   return (
     <ReportAccessGate>

@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Admin-uploaded report files (keep folder)
+/public/reports/uploads/*
+!/public/reports/uploads/.gitkeep

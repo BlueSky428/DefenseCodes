@@ -16,3 +16,12 @@ CREATE INDEX IF NOT EXISTS purchases_wallet_lower_idx
 
 CREATE INDEX IF NOT EXISTS purchases_wallet_report_idx
   ON purchases (lower(wallet_address), report_id);
+
+-- Admin-managed pricing and deliverable paths (see /admin). Paths are public URLs under /reports/…
+CREATE TABLE IF NOT EXISTS report_overrides (
+  report_id TEXT PRIMARY KEY,
+  price_usdt NUMERIC(12, 4),
+  doc_public_path TEXT,
+  pdf_public_path TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

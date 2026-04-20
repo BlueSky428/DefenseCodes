@@ -1,13 +1,41 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { GlassPanel } from "@/components/glass-panel";
 import { useWallet } from "@/context/wallet-context";
 import { reports } from "@/data/reports";
 import { WalletConnectEntry } from "@/components/wallet-connect-modal";
 
+type CatalogEntry = { id: string; priceUsdt: number };
+
 export function ReportsLibrary() {
   const { address } = useWallet();
+  const [catalogPrices, setCatalogPrices] = useState<Record<string, number> | null>(null);
+
+  useEffect(() => {
+    if (!address) {
+      setCatalogPrices(null);
+      return;
+    }
+    let cancelled = false;
+    void fetch("/api/reports/catalog")
+      .then((r) => r.json())
+      .then((data: { reports?: CatalogEntry[] }) => {
+        if (cancelled) return;
+        const m: Record<string, number> = {};
+        for (const e of data.reports ?? []) {
+          m[e.id] = e.priceUsdt;
+        }
+        setCatalogPrices(m);
+      })
+      .catch(() => {
+        if (!cancelled) setCatalogPrices({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
 
   if (!address) {
     return (
@@ -62,6 +90,15 @@ export function ReportsLibrary() {
                 {r.title}
               </h2>
               <p className="mt-2 text-sm text-[var(--accent)]">{r.riskHighlight}</p>
+              <p className="mt-3 text-xs text-slate-500">
+                From{" "}
+                <span className="font-semibold text-slate-300">
+                  {catalogPrices === null
+                    ? "…"
+                    : (catalogPrices[r.id] ?? r.priceUsdt)}{" "}
+                  USDT
+                </span>
+              </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   href={`/report/${r.slug}`}
