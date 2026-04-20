@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AdminReportsPanel } from "@/components/admin-reports-panel";
 
 export const metadata = {
@@ -6,5 +7,15 @@ export const metadata = {
 };
 
 export default function AdminPage() {
-  return <AdminReportsPanel />;
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-5xl px-4 py-16 text-center text-sm text-slate-500">
+          Loading admin…
+        </div>
+      }
+    >
+      <AdminReportsPanel />
+    </Suspense>
+  );
 }
