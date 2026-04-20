@@ -26,29 +26,42 @@ export async function GET(req: NextRequest) {
     return adminJson({ error: "DATABASE_URL is not set" }, 503);
   }
 
-  const map = await fetchAllOverrideRows();
-  const dynamicIds = await fetchDynamicReportIdSet();
-  const mergedList = await resolveAllReports();
-  const list = mergedList.map((base) => {
-    const row = map.get(base.id) ?? null;
-    const merged = mergeReportWithOverride(base, row);
-    return {
-      id: base.id,
-      slug: base.slug,
-      title: base.title,
-      sector: base.sector,
-      source: dynamicIds.has(base.id) ? ("dynamic" as const) : ("builtin" as const),
-      defaultPriceUsdt: base.priceUsdt,
-      effectivePriceUsdt: merged.priceUsdt,
-      defaultDocPath: base.fullReportPath,
-      defaultPdfPath: base.fullReportPdfPath,
-      overridePriceUsdt: row ? numOrNull(row.price_usdt) : null,
-      overrideDocPath: row?.doc_public_path ?? null,
-      overridePdfPath: row?.pdf_public_path ?? null,
-      effectiveDocPath: merged.fullReportPath,
-      effectivePdfPath: merged.fullReportPdfPath,
-    };
-  });
-  const hiddenBuiltins = await listHiddenBuiltinsForAdmin();
-  return adminJson({ reports: list, hiddenBuiltins });
+  try {
+    const map = await fetchAllOverrideRows();
+    const dynamicIds = await fetchDynamicReportIdSet();
+    const mergedList = await resolveAllReports();
+    const list = mergedList.map((base) => {
+      const row = map.get(base.id) ?? null;
+      const merged = mergeReportWithOverride(base, row);
+      return {
+        id: base.id,
+        slug: base.slug,
+        title: base.title,
+        sector: base.sector,
+        source: dynamicIds.has(base.id) ? ("dynamic" as const) : ("builtin" as const),
+        defaultPriceUsdt: base.priceUsdt,
+        effectivePriceUsdt: merged.priceUsdt,
+        defaultDocPath: base.fullReportPath,
+        defaultPdfPath: base.fullReportPdfPath,
+        overridePriceUsdt: row ? numOrNull(row.price_usdt) : null,
+        overrideDocPath: row?.doc_public_path ?? null,
+        overridePdfPath: row?.pdf_public_path ?? null,
+        effectiveDocPath: merged.fullReportPath,
+        effectivePdfPath: merged.fullReportPdfPath,
+      };
+    });
+    const hiddenBuiltins = await listHiddenBuiltinsForAdmin();
+    return adminJson({ reports: list, hiddenBuiltins });
+  } catch (e) {
+    console.error("[admin reports GET]", e);
+    const msg = e instanceof Error ? e.message : "Catalog query failed";
+    return adminJson(
+      {
+        error: msg,
+        hint:
+          "If this started after a deploy, run the latest `db/schema.sql` in Neon (including `report_definitions` and `report_catalog_hidden`).",
+      },
+      500,
+    );
+  }
 }

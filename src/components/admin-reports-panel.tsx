@@ -30,6 +30,22 @@ function headers(secret: string): HeadersInit {
   return { "x-admin-secret": secret.trim() };
 }
 
+async function readJsonResponse<T>(r: Response): Promise<T> {
+  const raw = await r.text();
+  if (!raw.trim()) {
+    throw new Error(
+      `Empty response from server (HTTP ${r.status}). The handler may have crashed before sending JSON.`,
+    );
+  }
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    throw new Error(
+      `Server did not return JSON (HTTP ${r.status}). First bytes: ${raw.slice(0, 160).replace(/\s+/g, " ")}`,
+    );
+  }
+}
+
 function SourceChip({ custom }: { custom: boolean }) {
   return (
     <span
@@ -308,12 +324,16 @@ export function AdminReportsPanel() {
     setMessage(null);
     try {
       const r = await fetch("/api/admin/reports", { headers: headers(secret) });
-      const data = (await r.json()) as {
+      const data = await readJsonResponse<{
         reports?: AdminReportRow[];
         hiddenBuiltins?: HiddenBuiltinRow[];
         error?: string;
-      };
-      if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+        hint?: string;
+      }>(r);
+      if (!r.ok) {
+        const hint = data.hint ? ` ${data.hint}` : "";
+        throw new Error((data.error || `HTTP ${r.status}`) + hint);
+      }
       const list = data.reports ?? [];
       setRows(list);
       setHiddenBuiltins(data.hiddenBuiltins ?? []);
