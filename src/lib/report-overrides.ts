@@ -1,6 +1,5 @@
 import { getSql } from "@/lib/db";
 import type { Report } from "@/data/reports";
-import { reports } from "@/data/reports";
 
 export type ReportOverrideRow = {
   report_id: string;
@@ -57,29 +56,6 @@ export async function fetchAllOverrideRows(): Promise<Map<string, ReportOverride
 export async function mergeReportFromDb(base: Report): Promise<Report> {
   const row = await fetchReportOverrideRow(base.id);
   return mergeReportWithOverride(base, row);
-}
-
-export type CatalogEntry = {
-  id: string;
-  slug: string;
-  title: string;
-  sector: string;
-  priceUsdt: number;
-};
-
-export async function buildMergedCatalog(): Promise<CatalogEntry[]> {
-  const map = await fetchAllOverrideRows();
-  return reports.map((r) => {
-    const row = map.get(r.id) ?? null;
-    const merged = mergeReportWithOverride(r, row);
-    return {
-      id: merged.id,
-      slug: merged.slug,
-      title: merged.title,
-      sector: merged.sector,
-      priceUsdt: merged.priceUsdt,
-    };
-  });
 }
 
 export async function upsertOverridePatch(

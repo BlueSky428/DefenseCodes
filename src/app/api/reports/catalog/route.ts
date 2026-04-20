@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildMergedCatalog } from "@/lib/report-overrides";
+import { buildMergedCatalog } from "@/lib/reports-catalog";
 
 /** Public merged prices (and ids) for the reports library; no file paths. */
 export async function GET() {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { reports } from "@/data/reports";
+import { reportExistsInCatalog } from "@/lib/reports-catalog";
 import { adminSecretConfigured, verifyAdminRequest } from "@/lib/admin-auth";
 import { upsertOverridePatch } from "@/lib/report-overrides";
 
@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   }
 
   const { reportId } = await ctx.params;
-  if (!reports.some((r) => r.id === reportId)) {
+  if (!(await reportExistsInCatalog(reportId))) {
     return NextResponse.json({ error: "Unknown report" }, { status: 404 });
   }
 

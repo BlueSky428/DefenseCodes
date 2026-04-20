@@ -1,13 +1,15 @@
 import { notFound } from "next/navigation";
-import { getReportBySlug, reports } from "@/data/reports";
+import { reports as builtinReports } from "@/data/reports";
 import { mergeReportFromDb } from "@/lib/report-overrides";
+import { resolveReportBySlug } from "@/lib/reports-catalog";
 import { ReportDetail } from "@/components/report-detail";
 import { ReportAccessGate } from "@/components/report-access-gate";
 
 export const dynamic = "force-dynamic";
+export const dynamicParams = true;
 
 export function generateStaticParams() {
-  return reports.map((r) => ({ slug: r.slug }));
+  return builtinReports.map((r) => ({ slug: r.slug }));
 }
 
 export async function generateMetadata({
@@ -16,7 +18,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const report = getReportBySlug(slug);
+  const report = await resolveReportBySlug(slug);
   if (!report) return { title: "Report | defense.codes" };
   return { title: `${report.title} | defense.codes` };
 }
@@ -27,7 +29,7 @@ export default async function ReportPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const base = getReportBySlug(slug);
+  const base = await resolveReportBySlug(slug);
   if (!base) notFound();
   const report = await mergeReportFromDb(base);
 

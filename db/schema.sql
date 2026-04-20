@@ -25,3 +25,15 @@ CREATE TABLE IF NOT EXISTS report_overrides (
   pdf_public_path TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Admin-created reports (full JSON body). Built-ins stay in code; use report_catalog_hidden to hide them.
+CREATE TABLE IF NOT EXISTS report_definitions (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  body JSONB NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS report_catalog_hidden (
+  report_id TEXT PRIMARY KEY
+);

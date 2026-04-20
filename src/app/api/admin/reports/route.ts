@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { reports } from "@/data/reports";
 import { adminSecretConfigured, verifyAdminRequest } from "@/lib/admin-auth";
+import {
+  fetchDynamicReportIdSet,
+  listHiddenBuiltinsForAdmin,
+  resolveAllReports,
+} from "@/lib/reports-catalog";
 import {
   fetchAllOverrideRows,
   mergeReportWithOverride,
@@ -18,13 +22,14 @@ export async function GET(req: NextRequest) {
   if (!verifyAdminRequest(req)) {
     return adminJson({ error: "Unauthorized" }, 401);
   }
-  const sqlConfigured = Boolean(process.env.DATABASE_URL?.trim());
-  if (!sqlConfigured) {
+  if (!process.env.DATABASE_URL?.trim()) {
     return adminJson({ error: "DATABASE_URL is not set" }, 503);
   }
 
   const map = await fetchAllOverrideRows();
-  const list = reports.map((base) => {
+  const dynamicIds = await fetchDynamicReportIdSet();
+  const mergedList = await resolveAllReports();
+  const list = mergedList.map((base) => {
     const row = map.get(base.id) ?? null;
     const merged = mergeReportWithOverride(base, row);
     return {
@@ -32,6 +37,7 @@ export async function GET(req: NextRequest) {
       slug: base.slug,
       title: base.title,
       sector: base.sector,
+      source: dynamicIds.has(base.id) ? ("dynamic" as const) : ("builtin" as const),
       defaultPriceUsdt: base.priceUsdt,
       effectivePriceUsdt: merged.priceUsdt,
       defaultDocPath: base.fullReportPath,
@@ -43,5 +49,6 @@ export async function GET(req: NextRequest) {
       effectivePdfPath: merged.fullReportPdfPath,
     };
   });
-  return adminJson({ reports: list });
+  const hiddenBuiltins = await listHiddenBuiltinsForAdmin();
+  return adminJson({ reports: list, hiddenBuiltins });
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { reports } from "@/data/reports";
+import { reportExistsInCatalog } from "@/lib/reports-catalog";
 import { adminSecretConfigured, verifyAdminRequest } from "@/lib/admin-auth";
 import {
   fetchReportOverrideRow,
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   }
 
   const { reportId } = await ctx.params;
-  if (!reports.some((r) => r.id === reportId)) {
+  if (!(await reportExistsInCatalog(reportId))) {
     return NextResponse.json({ error: "Unknown report" }, { status: 404 });
   }
 
