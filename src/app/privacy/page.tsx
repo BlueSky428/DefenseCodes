@@ -1,6 +1,6 @@
 import { GlassPanel } from "@/components/glass-panel";
 
-export const metadata = { title: "Privacy | defense.codes" };
+export const metadata = { title: "Privacy | DefenseCodes" };
 
 export default function PrivacyPage() {
   return (

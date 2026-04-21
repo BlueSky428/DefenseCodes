@@ -93,14 +93,14 @@ export function SiteHeader() {
         <Link href="/" className="group flex items-center gap-3">
           <Image
             src="/logo.svg"
-            alt="defense.codes"
+            alt="DefenseCodes"
             width={32}
             height={32}
             priority
             className="h-8 w-8"
           />
           <span className="font-[family-name:var(--font-space)] text-lg font-semibold tracking-tight text-white">
-            defense.codes
+            DefenseCodes
           </span>
           <span className="hidden text-xs text-slate-500 sm:inline">
             supply chain intelligence

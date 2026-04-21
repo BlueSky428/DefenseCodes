@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { AdminReportsPanel } from "@/components/admin-reports-panel";
 
 export const metadata = {
-  title: "Admin · Reports | defense.codes",
+  title: "Admin · Reports | DefenseCodes",
   robots: { index: false, follow: false },
 };
 

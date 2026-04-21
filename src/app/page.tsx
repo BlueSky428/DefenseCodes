@@ -34,10 +34,13 @@ export default function HomePage() {
           aria-hidden
         />
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
-          <h1 className="mt-4 max-w-3xl font-[family-name:var(--font-space)] text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
-            <span className="text-[var(--accent)]">defense.codes</span>
-            <span className="text-slate-500">: </span>
-            <span className="text-white">Strategic supply chain risk intelligence</span>
+          <h1 className="mt-4 max-w-3xl font-[family-name:var(--font-space)] font-semibold leading-tight tracking-tight">
+            <span className="block text-3xl text-[var(--accent)] sm:text-4xl lg:text-5xl">
+              DefenseCodes
+            </span>
+            <span className="mt-2 block text-xl font-medium leading-snug text-white sm:text-2xl lg:text-3xl">
+              Strategic supply chain risk intelligence
+            </span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">
             Supply Chain Risk Analysis Reports for Defense, Space, and Aerospace.

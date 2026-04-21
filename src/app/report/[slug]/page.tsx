@@ -19,8 +19,8 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const report = await resolveReportBySlug(slug);
-  if (!report) return { title: "Report | defense.codes" };
-  return { title: `${report.title} | defense.codes` };
+  if (!report) return { title: "Report | DefenseCodes" };
+  return { title: `${report.title} | DefenseCodes` };
 }
 
 export default async function ReportPage({
