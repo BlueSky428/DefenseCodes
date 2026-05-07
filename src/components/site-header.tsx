@@ -88,28 +88,33 @@ export function SiteHeader() {
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0A0F1F]/70 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="group flex items-center gap-3">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0A0F1F]/70 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0A0F1F]/60">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 py-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:py-4 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] lg:pl-[max(2rem,env(safe-area-inset-left))] lg:pr-[max(2rem,env(safe-area-inset-right))]">
+        <Link
+          href="/"
+          className="group flex min-w-0 max-w-full items-center gap-2 sm:gap-3"
+        >
           <Image
-            src="/logo.svg"
+            src="/logo.png"
             alt="DefenseCodes"
-            width={32}
-            height={32}
+            width={500}
+            height={500}
+            sizes="44px"
             priority
-            className="h-8 w-8"
+            unoptimized
+            className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10 md:h-11 md:w-11"
           />
-          <span className="font-[family-name:var(--font-space)] text-lg font-semibold tracking-tight text-white">
+          <span className="min-w-0 truncate font-[family-name:var(--font-space)] text-base font-semibold tracking-tight text-white sm:text-lg">
             DefenseCodes
           </span>
-          <span className="hidden text-xs text-slate-500 sm:inline">
+          <span className="hidden min-w-0 shrink truncate text-xs text-slate-500 md:inline">
             supply chain intelligence
           </span>
         </Link>
-        <nav className="relative flex flex-wrap items-center gap-3 text-sm">
+        <nav className="relative flex w-full min-w-0 flex-wrap items-center gap-2 text-sm sm:w-auto sm:justify-end sm:gap-3">
           <Link
             href="/reports"
-            className="rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:min-h-0 sm:min-w-0"
           >
             Reports
           </Link>
@@ -120,7 +125,7 @@ export function SiteHeader() {
                 aria-expanded={menuOpen}
                 aria-haspopup="menu"
                 onClick={() => setMenuOpen((o) => !o)}
-                className="flex items-center gap-2.5 rounded-xl border border-white/20 bg-white/5 px-3 py-2 pr-3.5 text-left text-white transition hover:border-[var(--accent)]/50 hover:bg-white/10"
+                className="flex min-h-11 min-w-0 max-w-full items-center gap-2.5 rounded-xl border border-white/20 bg-white/5 px-3 py-2 pr-3.5 text-left text-white transition hover:border-[var(--accent)]/50 hover:bg-white/10"
               >
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15">
                   {walletIconUrl ? (
@@ -136,14 +141,14 @@ export function SiteHeader() {
                     <WalletGlyph label={walletDisplayName} />
                   )}
                 </span>
-                <span className="font-mono text-sm font-semibold tabular-nums text-white">
+                <span className="min-w-0 truncate font-mono text-xs font-semibold tabular-nums text-white sm:text-sm">
                   {shortenAddress(address)}
                 </span>
               </button>
 
               {menuOpen ? (
                 <div
-                  className="absolute right-0 top-[calc(100%+0.4rem)] z-[60] min-w-[12.5rem] overflow-hidden rounded-xl border border-white/10 bg-[#2a2a2e] py-1 shadow-2xl ring-1 ring-black/50"
+                  className="absolute right-0 top-[calc(100%+0.4rem)] z-[60] w-[min(18rem,calc(100vw-1.5rem))] min-w-[12.5rem] overflow-hidden rounded-xl border border-white/10 bg-[#2a2a2e] py-1 shadow-2xl ring-1 ring-black/50 max-[380px]:right-auto max-[380px]:left-0"
                   role="menu"
                 >
                   <button
@@ -189,7 +194,10 @@ export function SiteHeader() {
               />
             </div>
           ) : (
-            <WalletConnectEntry variant="header" />
+            <WalletConnectEntry
+              variant="header"
+              className="w-full min-w-0 sm:w-auto sm:shrink-0"
+            />
           )}
         </nav>
       </div>

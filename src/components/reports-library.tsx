@@ -59,8 +59,8 @@ export function ReportsLibrary() {
 
   if (!address) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-20 sm:px-6">
-        <GlassPanel className="border border-white/[0.08] p-8 text-center shadow-[0_0_0_1px_rgba(0,229,255,0.04)]">
+      <div className="mx-auto max-w-lg py-16 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] min-[400px]:py-20 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))]">
+        <GlassPanel className="border border-white/[0.08] p-6 text-center shadow-[0_0_0_1px_rgba(0,229,255,0.04)] min-[400px]:p-8">
           <h1 className="font-[family-name:var(--font-space)] text-2xl font-semibold text-white">
             Connect your wallet
           </h1>
@@ -85,12 +85,12 @@ export function ReportsLibrary() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-6xl py-10 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] min-[400px]:py-12 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] lg:pl-[max(2rem,env(safe-area-inset-left))] lg:pr-[max(2rem,env(safe-area-inset-right))]">
       <div className="max-w-2xl">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
           Library
         </p>
-        <h1 className="mt-2 font-[family-name:var(--font-space)] text-3xl font-semibold tracking-tight text-white">
+        <h1 className="mt-2 font-[family-name:var(--font-space)] text-2xl font-semibold tracking-tight text-white min-[400px]:text-3xl">
           Reports
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-400">
@@ -101,10 +101,10 @@ export function ReportsLibrary() {
           <p className="mt-2 text-xs text-slate-500">Refreshing catalog…</p>
         ) : null}
       </div>
-      <ul className="mt-10 grid gap-6 md:grid-cols-2">
+      <ul className="mt-8 grid gap-5 min-[400px]:mt-10 min-[400px]:gap-6 sm:grid-cols-2">
         {displayRows.map((r) => (
           <li key={r.id}>
-            <GlassPanel className="flex h-full flex-col border border-white/[0.08] p-6 transition hover:border-[var(--accent)]/20 hover:shadow-[0_0_0_1px_rgba(0,229,255,0.06)]">
+            <GlassPanel className="flex h-full min-w-0 flex-col border border-white/[0.08] p-5 transition hover:border-[var(--accent)]/20 hover:shadow-[0_0_0_1px_rgba(0,229,255,0.06)] min-[400px]:p-6">
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="rounded-full border border-[var(--accent)]/35 px-2 py-0.5 font-medium text-[var(--accent)]">
                   {r.sector}

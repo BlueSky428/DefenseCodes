@@ -10,9 +10,9 @@ export function ReportAccessGate({ children }: { children: React.ReactNode }) {
 
   if (!address) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-20 sm:px-6">
-        <GlassPanel className="p-8 text-center">
-          <h1 className="font-[family-name:var(--font-space)] text-2xl font-semibold text-white">
+      <div className="mx-auto max-w-lg py-16 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] min-[400px]:py-20 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))]">
+        <GlassPanel className="p-6 text-center min-[400px]:p-8">
+          <h1 className="font-[family-name:var(--font-space)] text-xl font-semibold text-white min-[400px]:text-2xl">
             Wallet required
           </h1>
           <p className="mt-3 text-sm text-slate-400">

@@ -31,17 +31,24 @@ export function ReportDetail({ report }: { report: Report }) {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
       />
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-wrap items-center gap-3 text-sm text-slate-400">
-          <Link href="/reports" className="hover:text-[var(--accent)]">
+      <div className="mx-auto max-w-6xl py-8 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] min-[400px]:py-10 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] lg:pl-[max(2rem,env(safe-area-inset-left))] lg:pr-[max(2rem,env(safe-area-inset-right))]">
+        <div className="mb-6 flex min-w-0 flex-col gap-1 text-sm text-slate-400 min-[400px]:mb-8 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-0">
+          <Link
+            href="/reports"
+            className="shrink-0 hover:text-[var(--accent)]"
+          >
             ← Reports library
           </Link>
-          <span className="text-slate-600">/</span>
-          <span className="text-slate-300">{report.title}</span>
+          <div className="flex min-w-0 items-start gap-x-2 sm:items-center">
+            <span className="hidden text-slate-600 sm:inline" aria-hidden>
+              /
+            </span>
+            <span className="min-w-0 break-words text-slate-300">{report.title}</span>
+          </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(260px,320px)_1fr]">
-          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+        <div className="grid gap-6 min-[400px]:gap-8 lg:grid-cols-[minmax(240px,320px)_1fr]">
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
             {unlocked ? (
               <>
                 <GlassPanel className="p-5">
@@ -148,21 +155,21 @@ export function ReportDetail({ report }: { report: Report }) {
 
           <main className="min-w-0 space-y-8">
             <GlassPanel className="overflow-hidden">
-              <div className="border-b border-white/10 bg-gradient-to-r from-[var(--accent)]/10 to-transparent px-6 py-5">
+              <div className="border-b border-white/10 bg-gradient-to-r from-[var(--accent)]/10 to-transparent px-4 py-4 min-[400px]:px-6 min-[400px]:py-5">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--accent)]">
                   <span className="rounded-full border border-[var(--accent)]/30 px-2 py-0.5">
                     {report.sector}
                   </span>
                   <span className="text-slate-500">{report.date}</span>
                 </div>
-                <h1 className="mt-2 font-[family-name:var(--font-space)] text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                <h1 className="mt-2 font-[family-name:var(--font-space)] text-xl font-semibold tracking-tight text-white min-[400px]:text-2xl sm:text-3xl">
                   {report.title}
                 </h1>
                 <p className="mt-2 text-sm text-[var(--accent)]">
                   {report.riskHighlight}
                 </p>
               </div>
-              <div className="space-y-6 px-6 py-8">
+              <div className="space-y-6 px-4 py-6 min-[400px]:px-6 min-[400px]:py-8">
                 <section>
                   <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
                     Executive summary
@@ -214,7 +221,7 @@ export function ReportDetail({ report }: { report: Report }) {
                 ) : null}
 
                 {!unlocked ? (
-                  <section className="relative overflow-hidden rounded-2xl border border-dashed border-[var(--accent)]/35 bg-[#070b18]/80 p-8">
+                  <section className="relative overflow-hidden rounded-2xl border border-dashed border-[var(--accent)]/35 bg-[#070b18]/80 p-5 min-[400px]:p-8">
                     <div
                       className="pointer-events-none absolute inset-0 opacity-[0.07]"
                       style={{
@@ -235,14 +242,14 @@ export function ReportDetail({ report }: { report: Report }) {
                       <button
                         type="button"
                         onClick={() => setModalOpen(true)}
-                        className="mt-6 inline-flex items-center justify-center rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-[#0A0F1F] shadow-[0_0_32px_rgba(0,229,255,0.35)] transition hover:brightness-110"
+                        className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-[#0A0F1F] shadow-[0_0_32px_rgba(0,229,255,0.35)] transition hover:brightness-110 sm:min-h-0 sm:w-auto"
                       >
                         Unlock with {report.priceUsdt} USDT
                       </button>
                     </div>
                   </section>
                 ) : (
-                  <section className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-8">
+                  <section className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 min-[400px]:p-8">
                     <h2 className="font-[family-name:var(--font-space)] text-lg font-semibold text-emerald-300">
                       Full report unlocked
                     </h2>

@@ -9,10 +9,10 @@ export type WalletConnectButtonVariant = "header" | "hero" | "block";
 
 const buttonStyles: Record<WalletConnectButtonVariant, string> = {
   header:
-    "rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-[var(--accent)]/50 hover:bg-white/10 disabled:opacity-60",
-  hero: "inline-flex w-full items-center justify-center rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-[#0A0F1F] shadow-[0_0_28px_rgba(0,229,255,0.3)] transition hover:brightness-110 disabled:opacity-60 sm:w-auto",
+    "min-h-11 rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-[var(--accent)]/50 hover:bg-white/10 disabled:opacity-60",
+  hero: "inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-[#0A0F1F] shadow-[0_0_28px_rgba(0,229,255,0.3)] transition hover:brightness-110 disabled:opacity-60 sm:min-h-0 sm:w-auto",
   block:
-    "w-full rounded-xl bg-[var(--accent)] py-3 text-sm font-semibold text-[#0A0F1F] shadow-[0_0_24px_rgba(0,229,255,0.25)] transition hover:brightness-110 disabled:opacity-60",
+    "min-h-11 w-full rounded-xl bg-[var(--accent)] py-3 text-sm font-semibold text-[#0A0F1F] shadow-[0_0_24px_rgba(0,229,255,0.25)] transition hover:brightness-110 disabled:opacity-60 sm:min-h-0",
 };
 
 type ModalProps = {
