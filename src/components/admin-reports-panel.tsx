@@ -26,8 +26,39 @@ type AdminReportRow = {
 
 type HiddenBuiltinRow = { id: string; title: string; slug: string; sector: string };
 
+type AdminPurchaseRow = {
+  id: string;
+  reportId: string;
+  walletAddress: string;
+  chainId: number;
+  txHash: string;
+  createdAt: string;
+};
+
 function headers(secret: string): HeadersInit {
   return { "x-admin-secret": secret.trim() };
+}
+
+function chainLabel(chainId: number): string {
+  if (chainId === 1) return "Ethereum Mainnet";
+  if (chainId === 11155111) return "Sepolia";
+  if (chainId === 56) return "BSC Mainnet";
+  if (chainId === 97) return "BSC Testnet";
+  return `Chain ${chainId}`;
+}
+
+function txExplorerUrl(chainId: number, txHash: string): string | null {
+  if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) return null;
+  if (chainId === 1) return `https://etherscan.io/tx/${txHash}`;
+  if (chainId === 11155111) return `https://sepolia.etherscan.io/tx/${txHash}`;
+  if (chainId === 56) return `https://bscscan.com/tx/${txHash}`;
+  if (chainId === 97) return `https://testnet.bscscan.com/tx/${txHash}`;
+  return null;
+}
+
+function shortHash(h: string): string {
+  if (h.length < 14) return h;
+  return `${h.slice(0, 8)}…${h.slice(-6)}`;
 }
 
 async function readJsonResponse<T>(r: Response): Promise<T> {
@@ -434,9 +465,12 @@ export function AdminReportsPanel() {
   const [hiddenBuiltins, setHiddenBuiltins] = useState<HiddenBuiltinRow[]>([]);
   const [priceDraft, setPriceDraft] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [transactionsError, setTransactionsError] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<AdminPurchaseRow[]>([]);
   const [addOpen, setAddOpen] = useState(false);
 
   /** True once catalog data exists or we've marked the session authed (covers empty catalog after load). */
@@ -460,20 +494,39 @@ export function AdminReportsPanel() {
       return;
     }
     setLoading(true);
+    setTransactionsLoading(true);
     setError(null);
+    setTransactionsError(null);
     setMessage(null);
     try {
-      const r = await fetch("/api/admin/reports", { headers: headers(secret) });
+      const [catalogRes, txRes] = await Promise.all([
+        fetch("/api/admin/reports", { headers: headers(secret) }),
+        fetch("/api/admin/purchases?limit=100", { headers: headers(secret) }),
+      ]);
+
       const data = await readJsonResponse<{
         reports?: AdminReportRow[];
         hiddenBuiltins?: HiddenBuiltinRow[];
         error?: string;
         hint?: string;
-      }>(r);
-      if (!r.ok) {
+      }>(catalogRes);
+      if (!catalogRes.ok) {
         const hint = data.hint ? ` ${data.hint}` : "";
-        throw new Error((data.error || `HTTP ${r.status}`) + hint);
+        throw new Error((data.error || `HTTP ${catalogRes.status}`) + hint);
       }
+
+      const txData = await readJsonResponse<{
+        purchases?: AdminPurchaseRow[];
+        error?: string;
+      }>(txRes);
+      if (!txRes.ok) {
+        const reason = txData.error || `HTTP ${txRes.status}`;
+        setTransactions([]);
+        setTransactionsError(`Transactions unavailable: ${reason}`);
+      } else {
+        setTransactions(txData.purchases ?? []);
+      }
+
       const list = data.reports ?? [];
       setRows(list);
       setHiddenBuiltins(data.hiddenBuiltins ?? []);
@@ -488,9 +541,11 @@ export function AdminReportsPanel() {
       setAuthed(false);
       setRows([]);
       setHiddenBuiltins([]);
+      setTransactions([]);
       setError(e instanceof Error ? e.message : "Request failed");
     } finally {
       setLoading(false);
+      setTransactionsLoading(false);
     }
   }, [secret]);
 
@@ -677,6 +732,8 @@ export function AdminReportsPanel() {
     setAuthed(false);
     setRows([]);
     setHiddenBuiltins([]);
+    setTransactions([]);
+    setTransactionsError(null);
     setMessage(null);
     setError(null);
   };
@@ -948,6 +1005,79 @@ export function AdminReportsPanel() {
               </ul>
             </GlassPanel>
           ) : null}
+
+          <GlassPanel className="mt-6 overflow-hidden border border-white/[0.08] p-0 shadow-[0_0_0_1px_rgba(0,229,255,0.04)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-white/[0.03] px-5 py-4">
+              <div>
+                <h3 className="font-[family-name:var(--font-space)] text-base font-semibold text-white">
+                  Recent transactions
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Latest on-chain purchase submissions (up to 100).
+                </p>
+              </div>
+              {transactionsLoading ? (
+                <span className="text-xs text-slate-500">Refreshing…</span>
+              ) : (
+                <span className="text-xs text-slate-500">{transactions.length} rows</span>
+              )}
+            </div>
+
+            {transactionsError ? (
+              <div className="px-5 py-4 text-sm text-rose-300">{transactionsError}</div>
+            ) : transactions.length === 0 ? (
+              <div className="px-5 py-4 text-sm text-slate-500">No transactions found.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-[760px] w-full text-left text-sm">
+                  <thead className="bg-white/[0.02] text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Time</th>
+                      <th className="px-4 py-3 font-medium">Report</th>
+                      <th className="px-4 py-3 font-medium">Wallet</th>
+                      <th className="px-4 py-3 font-medium">Chain</th>
+                      <th className="px-4 py-3 font-medium">Tx hash</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.06]">
+                    {transactions.map((tx) => {
+                      const report = rows.find((r) => r.id === tx.reportId);
+                      const txUrl = txExplorerUrl(tx.chainId, tx.txHash);
+                      return (
+                        <tr key={tx.id} className="align-top">
+                          <td className="px-4 py-3 text-slate-300">
+                            {tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-white">{report?.title ?? tx.reportId}</div>
+                            <div className="font-mono text-[11px] text-slate-500">{tx.reportId}</div>
+                          </td>
+                          <td className="px-4 py-3 font-mono text-[12px] text-slate-300">
+                            {shortHash(tx.walletAddress)}
+                          </td>
+                          <td className="px-4 py-3 text-slate-300">{chainLabel(tx.chainId)}</td>
+                          <td className="px-4 py-3 font-mono text-[12px]">
+                            {txUrl ? (
+                              <a
+                                href={txUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[var(--accent)] hover:underline"
+                              >
+                                {shortHash(tx.txHash)}
+                              </a>
+                            ) : (
+                              <span className="text-slate-300">{shortHash(tx.txHash)}</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </GlassPanel>
         </>
       ) : null}
 
