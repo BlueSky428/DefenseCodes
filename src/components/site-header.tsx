@@ -108,7 +108,7 @@ export function SiteHeader() {
             href="/case-study"
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:min-h-0 sm:min-w-0"
           >
-            Case study
+            Case Study
           </Link>
           {address ? (
             <div ref={wrapRef} className="relative">

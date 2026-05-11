@@ -5,7 +5,7 @@ export function CaseStudyStaticDownloads() {
   return (
     <GlassPanel className="p-6 min-[400px]:p-8 sm:p-10">
       <h1 className="font-[family-name:var(--font-space)] text-xl font-semibold text-white min-[400px]:text-2xl">
-        Case study library
+        Case Study Library
       </h1>
 
       <ul className="mt-6 space-y-3">
