@@ -89,26 +89,13 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0A0F1F]/70 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0A0F1F]/60">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 py-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:py-4 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] lg:pl-[max(2rem,env(safe-area-inset-left))] lg:pr-[max(2rem,env(safe-area-inset-right))]">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
         <Link
           href="/"
           className="group flex min-w-0 max-w-full items-center gap-2 sm:gap-3"
         >
-          <Image
-            src="/logo.png"
-            alt="DefenseCodes"
-            width={500}
-            height={500}
-            sizes="44px"
-            priority
-            unoptimized
-            className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10 md:h-11 md:w-11"
-          />
           <span className="min-w-0 truncate font-[family-name:var(--font-space)] text-base font-semibold tracking-tight text-white sm:text-lg">
             DefenseCodes
-          </span>
-          <span className="hidden min-w-0 shrink truncate text-xs text-slate-500 md:inline">
-            supply chain intelligence
           </span>
         </Link>
         <nav className="relative flex w-full min-w-0 flex-wrap items-center gap-2 text-sm sm:w-auto sm:justify-end sm:gap-3">
