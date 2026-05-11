@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useWallet } from "@/context/wallet-context";
 import { WalletIssueModal } from "@/components/wallet-issue-modal";
@@ -104,6 +103,12 @@ export function SiteHeader() {
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:min-h-0 sm:min-w-0"
           >
             Reports
+          </Link>
+          <Link
+            href="/case-study"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:min-h-0 sm:min-w-0"
+          >
+            Case study
           </Link>
           {address ? (
             <div ref={wrapRef} className="relative">
