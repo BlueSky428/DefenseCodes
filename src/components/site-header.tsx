@@ -8,6 +8,7 @@ import {
   WalletConnectEntry,
   WalletSelectModal,
 } from "@/components/wallet-connect-modal";
+import { ContactModal } from "@/components/contact-modal";
 
 function shortenAddress(addr: string): string {
   if (addr.length < 12) return addr;
@@ -53,6 +54,7 @@ export function SiteHeader() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -110,6 +112,13 @@ export function SiteHeader() {
           >
             Case Study
           </Link>
+          <button
+            type="button"
+            onClick={() => setContactOpen(true)}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:min-h-0 sm:min-w-0"
+          >
+            Contact
+          </button>
           {address ? (
             <div ref={wrapRef} className="relative">
               <button
@@ -193,6 +202,7 @@ export function SiteHeader() {
           )}
         </nav>
       </div>
+      <ContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
       {walletIssue ? (
         <WalletIssueModal
           key={`${walletIssue.title}-${walletIssue.tone}-${lastAttemptedConnector ?? ""}-${lastAttemptedWalletRdns ?? ""}`}
