@@ -29,12 +29,6 @@ export function SiteFooter() {
         </div>
         <nav className="flex flex-wrap gap-6 text-sm text-slate-300 lg:pt-0.5">
           <Link
-            href="/terms"
-            className="transition-colors hover:text-[var(--accent)]"
-          >
-            Terms
-          </Link>
-          <Link
             href="/privacy"
             className="transition-colors hover:text-[var(--accent)]"
           >
