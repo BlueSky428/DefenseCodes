@@ -1,7 +1,6 @@
 import Image from "next/image";
-import Link from "next/link";
 import { GlassPanel } from "@/components/glass-panel";
-import { WalletCta } from "@/components/wallet-cta";
+import { HeroCtas } from "@/components/hero-ctas";
 
 const sectors = [
   {
@@ -49,15 +48,7 @@ export default function HomePage() {
               Executive summaries are free; the full report PDF unlocks after USDT
               payment (ERC-20 or BEP-20).
             </p>
-            <div className="mt-8 flex min-w-0 flex-col gap-3 min-[400px]:mt-10 sm:flex-row sm:flex-wrap sm:gap-4">
-              <WalletCta />
-              <Link
-                href="/reports"
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-[var(--accent)]/50 hover:bg-white/10 sm:min-h-0"
-              >
-                View reports
-              </Link>
-            </div>
+            <HeroCtas />
           </div>
           <div className="flex justify-center lg:justify-end">
             <Image

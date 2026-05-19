@@ -9,6 +9,10 @@ import {
   WalletSelectModal,
 } from "@/components/wallet-connect-modal";
 import { ContactModal } from "@/components/contact-modal";
+import { ViewReportsCta } from "@/components/wallet-cta";
+
+const navLinkClass =
+  "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:min-h-0 sm:min-w-0";
 
 function shortenAddress(addr: string): string {
   if (addr.length < 12) return addr;
@@ -100,22 +104,26 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav className="relative flex w-full min-w-0 flex-wrap items-center gap-2 text-sm sm:w-auto sm:justify-end sm:gap-3">
-          <Link
-            href="/reports"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:min-h-0 sm:min-w-0"
+          <a
+            href="https://newsletter.defense.codes"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={navLinkClass}
           >
-            Reports
-          </Link>
-          <Link
-            href="/case-study"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:min-h-0 sm:min-w-0"
-          >
+            Newsletters
+          </a>
+          <Link href="/case-study" className={navLinkClass}>
             Case Study
           </Link>
+          <ViewReportsCta
+            label="Reports"
+            className={navLinkClass}
+            connectVariant="nav"
+          />
           <button
             type="button"
             onClick={() => setContactOpen(true)}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:min-h-0 sm:min-w-0"
+            className={navLinkClass}
           >
             Contact
           </button>

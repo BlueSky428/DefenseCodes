@@ -5,7 +5,12 @@ import { ModalPortal } from "@/components/modal-portal";
 import { discoverWalletOptions, type WalletOption } from "@/lib/wallet-injected";
 import { useWallet } from "@/context/wallet-context";
 
-export type WalletConnectButtonVariant = "header" | "hero" | "block";
+export type WalletConnectButtonVariant =
+  | "header"
+  | "hero"
+  | "block"
+  | "outline"
+  | "nav";
 
 const buttonStyles: Record<WalletConnectButtonVariant, string> = {
   header:
@@ -13,6 +18,9 @@ const buttonStyles: Record<WalletConnectButtonVariant, string> = {
   hero: "inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-[#0A0F1F] shadow-[0_0_28px_rgba(0,229,255,0.3)] transition hover:brightness-110 disabled:opacity-60 sm:min-h-0 sm:w-auto",
   block:
     "min-h-11 w-full rounded-xl bg-[var(--accent)] py-3 text-sm font-semibold text-[#0A0F1F] shadow-[0_0_24px_rgba(0,229,255,0.25)] transition hover:brightness-110 disabled:opacity-60 sm:min-h-0",
+  outline:
+    "inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-[var(--accent)]/50 hover:bg-white/10 disabled:opacity-60 sm:min-h-0 sm:w-auto",
+  nav: "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-60 sm:min-h-0 sm:min-w-0",
 };
 
 type ModalProps = {
@@ -186,10 +194,15 @@ export function WalletSelectModal({ open, onClose }: ModalProps) {
 type EntryProps = {
   variant: WalletConnectButtonVariant;
   className?: string;
+  label?: string;
 };
 
 /** Opens a modal to pick from browser-installed Ethereum wallets. */
-export function WalletConnectEntry({ variant, className = "" }: EntryProps) {
+export function WalletConnectEntry({
+  variant,
+  className = "",
+  label = "Connect wallet",
+}: EntryProps) {
   const [open, setOpen] = useState(false);
   const { connecting } = useWallet();
 
@@ -201,7 +214,7 @@ export function WalletConnectEntry({ variant, className = "" }: EntryProps) {
         disabled={connecting}
         className={`${buttonStyles[variant]} ${className}`.trim()}
       >
-        {connecting ? "Connecting…" : "Connect wallet"}
+        {connecting ? "Connecting…" : label}
       </button>
       <WalletSelectModal open={open} onClose={() => setOpen(false)} />
     </>
