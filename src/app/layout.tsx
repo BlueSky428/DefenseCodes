@@ -2,8 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
+import { SiteShell } from "@/components/site-shell";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -54,9 +53,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full min-h-[100dvh] flex-col bg-[#0A0F1F] font-[family-name:var(--font-inter)] text-slate-100">
         <Providers>
-          <SiteHeader />
-          <div className="min-w-0 flex-1">{children}</div>
-          <SiteFooter />
+          <SiteShell>{children}</SiteShell>
         </Providers>
       </body>
     </html>
