@@ -16,6 +16,14 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
+const GTM_ID = "GTM-K9TS3LMN";
+
+const gtmScript = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${GTM_ID}');`;
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -51,7 +59,23 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
+      <head>
+        {/* Google Tag Manager */}
+        <script dangerouslySetInnerHTML={{ __html: gtmScript }} />
+        {/* End Google Tag Manager */}
+      </head>
       <body className="flex min-h-full min-h-[100dvh] flex-col bg-[#0A0F1F] font-[family-name:var(--font-inter)] text-slate-100">
+        {/* Google Tag Manager (noscript) */}
+        <noscript>
+          <iframe
+            src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+            title="Google Tag Manager"
+          />
+        </noscript>
+        {/* End Google Tag Manager (noscript) */}
         <Providers>
           <SiteShell>{children}</SiteShell>
         </Providers>
