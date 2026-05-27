@@ -14,6 +14,13 @@ import { ViewReportsCta } from "@/components/wallet-cta";
 const navLinkClass =
   "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 py-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:min-h-0 sm:min-w-0";
 
+const sectorLinks = [
+  { label: "Defense Reports", href: "/defense-supply-chain-risk-analysis-reports" },
+  { label: "Aerospace Reports", href: "/aerospace-supply-chain-risk-analysis-reports" },
+  { label: "Space Reports", href: "/space-supply-chain-risk-analysis-reports" },
+  { label: "Due Diligence Reports", href: "/aerospace-defense-due-diligence-reports" },
+];
+
 function shortenAddress(addr: string): string {
   if (addr.length < 12) return addr;
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
@@ -57,10 +64,12 @@ export function SiteHeader() {
   } = useWallet();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sectorOpen, setSectorOpen] = useState(false);
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const sectorRef = useRef<HTMLDivElement>(null);
 
   const copyAddress = useCallback(async () => {
     if (!address) return;
@@ -92,6 +101,24 @@ export function SiteHeader() {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!sectorOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (sectorRef.current && !sectorRef.current.contains(e.target as Node)) {
+        setSectorOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSectorOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [sectorOpen]);
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0A0F1F]/70 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0A0F1F]/60">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
@@ -104,6 +131,52 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav className="relative flex w-full min-w-0 flex-wrap items-center gap-2 text-sm sm:w-auto sm:justify-end sm:gap-3">
+          {/* Sector pages dropdown */}
+          <div ref={sectorRef} className="relative">
+            <button
+              type="button"
+              aria-expanded={sectorOpen}
+              aria-haspopup="menu"
+              onClick={() => setSectorOpen((o) => !o)}
+              className={`${navLinkClass} gap-1`}
+            >
+              Intelligence
+              <svg
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className={`h-3.5 w-3.5 transition-transform ${sectorOpen ? "rotate-180" : ""}`}
+                aria-hidden
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+            {sectorOpen && (
+              <div
+                role="menu"
+                className="absolute left-0 top-[calc(100%+0.4rem)] z-[60] w-64 overflow-hidden rounded-xl border border-white/10 bg-[#131929] py-1 shadow-2xl ring-1 ring-black/50 sm:left-auto sm:right-0"
+              >
+                {sectorLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    role="menuitem"
+                    onClick={() => setSectorOpen(false)}
+                    className="block px-4 py-3 text-sm text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Link href="/about" className={navLinkClass}>
+            About
+          </Link>
           <a
             href="https://newsletter.defense.codes"
             target="_blank"
