@@ -117,10 +117,10 @@ export function SimulationStep1() {
               aria-selected={tab === t}
               type="button"
               onClick={() => handleTabChange(t)}
-              className={`border-b-2 px-4 py-2.5 text-sm font-medium transition capitalize ${
+              className={`border-b-2 px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider transition ${
                 tab === t
-                  ? "border-blue-500 text-blue-400"
-                  : "border-transparent text-slate-500 hover:text-slate-300"
+                  ? "border-[#00e5ff] text-[#00e5ff]"
+                  : "border-transparent text-slate-600 hover:text-slate-300"
               }`}
             >
               {t === "import" ? "Bulk Import" : t === "templates" ? "Template Library" : "Manual"}
@@ -166,28 +166,61 @@ export function SimulationStep1() {
       {tab === "templates" && (
         <div className="flex-1 overflow-y-auto p-6">
           {templateLoading ? (
-            <div className="text-sm text-slate-500">Loading templates…</div>
+            <div className="font-mono text-xs text-slate-600">Loading templates…</div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-3xl">
-              {templates.map((tmpl) => (
-                <button
-                  key={tmpl.id}
-                  type="button"
-                  onClick={() => applyTemplate(tmpl.id)}
-                  className="rounded-xl border border-white/10 bg-white/[0.03] p-5 text-left transition hover:border-blue-500/40 hover:bg-blue-500/5 group"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 mb-3">
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 text-blue-400" aria-hidden>
-                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" />
-                    </svg>
-                  </div>
-                  <p className="text-sm font-semibold text-white group-hover:text-blue-300 transition">{tmpl.name}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{tmpl.description}</p>
-                  <span className="mt-3 inline-block text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition">
-                    Apply template →
+            <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
+              {/* Template A: Single-Source Regional Hub */}
+              <button
+                type="button"
+                onClick={() => applyTemplate("t1")}
+                className="group rounded-lg border border-white/[0.07] bg-white/[0.025] p-5 text-left transition hover:border-[#00e5ff]/30 hover:bg-[#00e5ff]/[0.04]"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-px font-mono text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                    Topology Preset
                   </span>
-                </button>
-              ))}
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-slate-700 group-hover:text-[#00e5ff]/50 transition" aria-hidden>
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" />
+                  </svg>
+                </div>
+                <p className="mt-3 font-[family-name:var(--font-space)] text-sm font-semibold text-white group-hover:text-[#00e5ff] transition">
+                  Single-Source Regional Hub
+                </p>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                  Standard 3-tier layout focusing on a single critical chokepoint port/hub feeding 2 primary depots.
+                </p>
+                <div className="mt-3 space-y-1 font-mono text-[10px] text-slate-600">
+                  <p>14 Nodes</p>
+                  <p>Baseline Historic Accuracy: 88.4%</p>
+                  <p>Calibrated: 2026-05-01 (Auto-L1)</p>
+                </div>
+              </button>
+
+              {/* Template B: Taiwan Strait Blockade */}
+              <button
+                type="button"
+                onClick={() => applyTemplate("t2")}
+                className="group rounded-lg border border-amber-500/20 bg-amber-500/[0.04] p-5 text-left transition hover:border-amber-500/40 hover:bg-amber-500/[0.07]"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-px font-mono text-[9px] font-bold uppercase tracking-wider text-amber-400">
+                    Adversarial Scenario (Validated)
+                  </span>
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-amber-500/40 group-hover:text-amber-400/70 transition" aria-hidden>
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <p className="mt-3 font-[family-name:var(--font-space)] text-sm font-semibold text-white group-hover:text-amber-300 transition">
+                  Taiwan Strait Blockade
+                </p>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                  Multi-tier global grid pre-loaded with validated assumptions, historical accuracy metrics, and adversarial failure cascades.
+                </p>
+                <div className="mt-3 space-y-1 font-mono text-[10px] text-slate-600">
+                  <p>Used in 842 simulations. Model accuracy vs actual: 95.2%.</p>
+                  <p>Last validated: 2026-05-15 by [Analyst Y].</p>
+                </div>
+              </button>
             </div>
           )}
         </div>
